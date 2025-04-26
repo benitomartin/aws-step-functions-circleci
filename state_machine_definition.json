@@ -1,0 +1,17 @@
+{
+    "Comment": "Simple two-step workflow",
+    "StartAt": "TaskOne",
+    "States": {
+      "TaskOne": {
+        "Type": "Task",
+        "Resource": "TASK_ONE_LAMBDA_ARN",
+        "Next": "TaskTwo"
+      },
+      "TaskTwo": {
+        "Type": "Task",
+        "Resource": "TASK_TWO_LAMBDA_ARN",
+        "End": true
+      }
+    }
+  }
+  
