@@ -1,17 +1,20 @@
 {
-    "Comment": "Simple two-step workflow",
+    "Comment": "Simple two-step workflow triggered by S3 uploads",
     "StartAt": "TaskOne",
     "States": {
-      "TaskOne": {
-        "Type": "Task",
-        "Resource": "TASK_ONE_LAMBDA_ARN",
-        "Next": "TaskTwo"
-      },
-      "TaskTwo": {
-        "Type": "Task",
-        "Resource": "TASK_TWO_LAMBDA_ARN",
-        "End": true
-      }
+        "TaskOne": {
+            "Type": "Task",
+            "Resource": "TASK_ONE_LAMBDA_ARN",
+            "ResultPath": "$.taskOneResult",
+            "Next": "TaskTwo"
+        },
+        "TaskTwo": {
+            "Type": "Task",
+            "Resource": "TASK_TWO_LAMBDA_ARN",
+            "InputPath": "$.taskOneResult",
+            "ResultPath": "$.taskTwoResult",
+            "End": true
+        }
     }
-  }
+}
   

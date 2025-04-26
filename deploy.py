@@ -14,8 +14,10 @@ LAMBDA_ROLE_NAME = os.getenv("LAMBDA_ROLE_NAME")
 LAMBDA_FOLDER = os.getenv("LAMBDA_FOLDER")
 LAMBDA_FUNCTION_ONE = os.getenv("LAMBDA_FUNCTION_ONE")
 LAMBDA_FUNCTION_TWO = os.getenv("LAMBDA_FUNCTION_TWO")
+LAMBDA_FUNCTION_S3_TRIGGER = os.getenv("LAMBDA_FUNCTION_S3_TRIGGER")
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 
-
+s3_client = boto3.client('s3')
 lambda_client = boto3.client('lambda')
 sf_client = boto3.client('stepfunctions')
 
@@ -96,13 +98,55 @@ def deploy_state_machine(def_path: str,
     return dict(response)
 
 
+def add_lambda_permission(function_name: str, bucket_name: str) -> None:
+    """Add permission for S3 to invoke the Lambda function."""
+    try:
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId=f'S3InvokeFunction-{bucket_name}',  # Unique statement ID
+            Action='lambda:InvokeFunction',
+            Principal='s3.amazonaws.com',
+            SourceArn=f'arn:aws:s3:::{bucket_name}'
+        )
+        logger.info(f"Added S3 invoke permission to Lambda function {function_name}")
+    except lambda_client.exceptions.ResourceConflictException:
+        logger.info(f"Permission already exists for Lambda function {function_name}")
+
+def add_s3_trigger_to_bucket(bucket_name: str, lambda_arn: str) -> None:
+    """Configure S3 bucket to trigger Lambda on file upload."""
+    # Extract function name from ARN
+    function_name = lambda_arn.split(':')[-1]
+    
+    # Add permission first
+    add_lambda_permission(function_name, bucket_name)
+    
+    # Then configure the notification
+    try:
+        s3_client.put_bucket_notification_configuration(
+            Bucket=bucket_name,
+            NotificationConfiguration={
+                'LambdaFunctionConfigurations': [
+                    {
+                        'LambdaFunctionArn': lambda_arn,  # Use the original ARN without :$LATEST
+                        'Events': ['s3:ObjectCreated:*']
+                    }
+                ]
+            }
+        )
+        logger.info(f"Added S3 trigger configuration to bucket {bucket_name}")
+    except Exception as e:
+        logger.error(f"Error configuring S3 trigger: {str(e)}")
+        logger.info(f"Attempted to configure with ARN: {lambda_arn}")
+        raise
+
+
 if __name__ == "__main__":
     logger.info("Starting deployment...")
 
     lambda_role = f"arn:aws:iam::{AWS_ACCOUNT_ID}:role/{LAMBDA_ROLE_NAME}"
     sf_role = f"arn:aws:iam::{AWS_ACCOUNT_ID}:role/{SF_ROLE_NAME}"
 
-    # Create or update Lambdas and add S3 trigger for TaskOne
+    # Create or update all Lambda functions
     lambdas = {
         "TaskOne": create_lambda_function(
             LAMBDA_FUNCTION_ONE,  # type: ignore
@@ -115,8 +159,19 @@ if __name__ == "__main__":
             f"{LAMBDA_FOLDER}/task_two.zip",
             lambda_role,
             "app_task_two.lambda_handler"
+        ),
+        "S3Trigger": create_lambda_function(
+            LAMBDA_FUNCTION_S3_TRIGGER,  # type: ignore
+            f"{LAMBDA_FOLDER}/s3_trigger.zip",
+            lambda_role,
+            "app_s3_trigger.lambda_handler"
         )
     }
 
+    # Deploy state machine
     deploy_state_machine("state_machine_definition.json", sf_role, lambdas)
+    
+    # Add S3 bucket trigger using the S3Trigger Lambda from the lambdas dict
+    add_s3_trigger_to_bucket(S3_BUCKET_NAME, lambdas["S3Trigger"])
+    
     logger.info("Deployment complete!")

@@ -54,4 +54,7 @@ zip_lambda_with_deps "task_one"
 # Zip task_two
 zip_lambda_with_deps "task_two"
 
-echo "✅ Lambda functions zipped successfully: ${LAMBDA_FOLDER}/task_one.zip, ${LAMBDA_FOLDER}/task_two.zip"
+# Zip s3_trigger
+zip_lambda_with_deps "s3_trigger"
+
+echo "✅ Lambda functions zipped successfully: ${LAMBDA_FOLDER}/task_one.zip, ${LAMBDA_FOLDER}/task_two.zip, ${LAMBDA_FOLDER}/s3_trigger.zip"

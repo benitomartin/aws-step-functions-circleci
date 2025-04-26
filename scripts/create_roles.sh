@@ -28,22 +28,25 @@ else
       }]
     }'
 
+  # Attach AWSLambdaBasicExecutionRole policy to the Lambda role
+  echo "🔹 Attaching AWSLambdaBasicExecutionRole policy to Lambda Role..."
   aws iam attach-role-policy --role-name $LAMBDA_ROLE_NAME \
     --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
-  # aws iam put-role-policy --role-name $LAMBDA_ROLE_NAME \
-  #   --policy-name LambdaStartStepFunctionPolicy \
-  #   --policy-document '{
-  #     "Version": "2012-10-17",
-  #     "Statement": [
-  #       {
-  #         "Effect": "Allow",
-  #         "Action": "states:StartExecution",
-  #         "Resource": "arn:aws:states:eu-central-1:730335307143:stateMachine:MyStateMachine"
-  #       }
-  #     ]
-  #   }'
-
+  # Add Step Functions start execution permission to Lambda role
+  echo "🔹 Adding Step Functions start execution permission to Lambda Role..."
+  aws iam put-role-policy --role-name $LAMBDA_ROLE_NAME \
+    --policy-name LambdaStartStepFunctionPolicy \
+    --policy-document '{
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": "states:StartExecution",
+          "Resource": "arn:aws:states:eu-central-1:730335307143:stateMachine:MyStateMachine"
+        }
+      ]
+    }'
 
   echo "✅ Lambda Role Created"
   
@@ -69,6 +72,8 @@ else
       }]
     }'
 
+  # Add Lambda invoke permission to Step Functions role
+  echo "🔹 Adding Lambda invoke permission to Step Function Role..."
   aws iam put-role-policy --role-name $SF_ROLE_NAME \
     --policy-name StepFunctionLambdaInvokePolicy \
     --policy-document '{

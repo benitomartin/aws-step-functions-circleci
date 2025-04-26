@@ -1,0 +1,33 @@
+import json
+from typing import Any
+ 
+import boto3  # type: ignore
+from loguru import logger
+
+sf_client = boto3.client('stepfunctions')
+
+def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
+    """Handle S3 event and trigger Step Functions execution."""
+    try:
+        # Get the S3 bucket and key from the event
+        bucket = event['Records'][0]['s3']['bucket']['name']
+        key = event['Records'][0]['s3']['object']['key']
+        
+        # Prepare input for Step Functions
+        input_data = {
+            "document_id": key.split('/')[-1].split('.')[0],  # Extract filename without extension
+            "s3_path": f"s3://{bucket}/{key}"
+        }
+        
+        # Start Step Functions execution
+        response = sf_client.start_execution(
+            stateMachineArn='arn:aws:states:eu-central-1:730335307143:stateMachine:MyStateMachine',
+            input=json.dumps(input_data)
+        )
+        
+        logger.info(f"Started Step Functions execution: {response['executionArn']}")
+        return {"statusCode": 200, "body": "Step Functions execution started successfully"}
+        
+    except Exception as e:
+        logger.error(f"Error processing S3 event: {e}")
+        raise
