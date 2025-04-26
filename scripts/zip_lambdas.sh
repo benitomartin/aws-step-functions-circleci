@@ -49,12 +49,15 @@ zip_lambda_with_deps() {
 echo "🚀 Zipping Lambda functions..."
 
 # Zip task_one
+echo "📦 Zipping task_one..."
 zip_lambda_with_deps "task_one"
 
 # Zip task_two
+echo "📦 Zipping task_two..."
 zip_lambda_with_deps "task_two"
 
 # Zip s3_trigger
+echo "📦 Zipping s3_trigger..."
 zip_lambda_with_deps "s3_trigger"
 
 echo "✅ Lambda functions zipped successfully: ${LAMBDA_FOLDER}/task_one.zip, ${LAMBDA_FOLDER}/task_two.zip, ${LAMBDA_FOLDER}/s3_trigger.zip"

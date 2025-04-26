@@ -8,16 +8,13 @@ set -o allexport
 source .env
 set +o allexport
 
-echo "✅ Environment variables loaded."
+STATE_MACHINE_ARN=arn:aws:states:${AWS_REGION}:${AWS_ACCOUNT_ID}:stateMachine:${STATE_MACHINE_NAME}
 
 # Create Lambda Execution Role
-echo "🔹 Checking if Lambda Execution Role exists..."
-
 if aws iam get-role --role-name $LAMBDA_ROLE_NAME 2>/dev/null; then
-  echo "✅ Lambda Role '$LAMBDA_ROLE_NAME' already exists. Skipping creation."
+  echo "✅ Lambda Role '$LAMBDA_ROLE_NAME' already exists."
 else
-  echo "🔹 Creating Lambda Execution Role..."
-
+  echo "🚀 Creating Lambda Role '$LAMBDA_ROLE_NAME'..."
   aws iam create-role --role-name $LAMBDA_ROLE_NAME \
     --assume-role-policy-document '{
       "Version": "2012-10-17",
@@ -28,40 +25,32 @@ else
       }]
     }'
 
-  # Attach AWSLambdaBasicExecutionRole policy to the Lambda role
-  echo "🔹 Attaching AWSLambdaBasicExecutionRole policy to Lambda Role..."
+  # Attach the AWSLambdaBasicExecutionRole policy
+  echo "🚀 Attaching AWSLambdaBasicExecutionRole policy to Lambda Role '$LAMBDA_ROLE_NAME'..."
   aws iam attach-role-policy --role-name $LAMBDA_ROLE_NAME \
     --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
-  # Add Step Functions start execution permission to Lambda role
-  echo "🔹 Adding Step Functions start execution permission to Lambda Role..."
+  # Attach the custom policy to allow starting Step Functions executions
+  echo "🚀 Attaching custom policy to Lambda Role '$LAMBDA_ROLE_NAME'..."
   aws iam put-role-policy --role-name $LAMBDA_ROLE_NAME \
     --policy-name LambdaStartStepFunctionPolicy \
-    --policy-document '{
-      "Version": "2012-10-17",
-      "Statement": [
-        {
-          "Effect": "Allow",
-          "Action": "states:StartExecution",
-          "Resource": "arn:aws:states:eu-central-1:730335307143:stateMachine:MyStateMachine"
-        }
-      ]
-    }'
+    --policy-document "{
+      \"Version\": \"2012-10-17\",
+      \"Statement\": [{
+        \"Effect\": \"Allow\",
+        \"Action\": \"states:StartExecution\",
+        \"Resource\": \"${STATE_MACHINE_ARN}\"
+      }]
+    }"
 
-  echo "✅ Lambda Role Created"
-  
 fi
 
-echo ""
-
 # Create Step Functions Execution Role
-echo "🔹 Checking if Step Function Role exists..."
-
 if aws iam get-role --role-name $SF_ROLE_NAME 2>/dev/null; then
-  echo "✅ Step Function Role '$SF_ROLE_NAME' already exists. Skipping creation."
+  echo "✅ Step Function Role '$SF_ROLE_NAME' already exists."
 else
-  echo "🔹 Creating Step Function Execution Role..."
-
+  # Create the step function role
+  echo "🚀 Creating Step Function Role '$SF_ROLE_NAME'..."
   aws iam create-role --role-name $SF_ROLE_NAME \
     --assume-role-policy-document '{
       "Version": "2012-10-17",
@@ -72,8 +61,8 @@ else
       }]
     }'
 
-  # Add Lambda invoke permission to Step Functions role
-  echo "🔹 Adding Lambda invoke permission to Step Function Role..."
+  # Attach the custom policy to allow invoking Lambda functions
+  echo "🚀 Attaching custom policy to Step Function Role '$SF_ROLE_NAME'..."
   aws iam put-role-policy --role-name $SF_ROLE_NAME \
     --policy-name StepFunctionLambdaInvokePolicy \
     --policy-document '{
@@ -84,10 +73,8 @@ else
         "Resource": "*"
       }]
     }'
-
-  echo "✅ Step Function Role Created"
 fi
 
-echo ""
 echo "🎯 All roles are ready!"
+
 

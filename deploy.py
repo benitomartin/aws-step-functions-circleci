@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from typing import Any
 
 import boto3
@@ -16,6 +17,7 @@ LAMBDA_FUNCTION_ONE = os.getenv("LAMBDA_FUNCTION_ONE")
 LAMBDA_FUNCTION_TWO = os.getenv("LAMBDA_FUNCTION_TWO")
 LAMBDA_FUNCTION_S3_TRIGGER = os.getenv("LAMBDA_FUNCTION_S3_TRIGGER")
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
+STATE_MACHINE_NAME = os.getenv("STATE_MACHINE_NAME")
 
 s3_client = boto3.client('s3')
 lambda_client = boto3.client('lambda')
@@ -25,6 +27,7 @@ def create_lambda_function(name: str,
                          zip_path: str, 
                          role_arn: str, 
                          handler: str) -> str:
+    """Create or update a Lambda function."""
     if not os.path.exists(zip_path):
         raise FileNotFoundError(f"{zip_path} does not exist. Make sure to zip your code first.")
 
@@ -34,21 +37,24 @@ def create_lambda_function(name: str,
     try:
         lambda_client.get_function(FunctionName=name)
         logger.info(f"✅ Lambda function {name} already exists. Updating code...")
-
         response = lambda_client.update_function_code(
             FunctionName=name,
             ZipFile=zipped_code
         )
     except lambda_client.exceptions.ResourceNotFoundException:
         logger.info(f"🚀 Creating new Lambda function {name}...")
-
         response = lambda_client.create_function(
             FunctionName=name,
             Runtime='python3.12',
             Role=role_arn,
             Handler=handler,
             Code={'ZipFile': zipped_code},
-            Timeout=10
+            Timeout=10,
+            Environment={
+                'Variables': {
+                    'STATE_MACHINE_NAME': STATE_MACHINE_NAME
+                }
+            }
         )
 
     return str(response['FunctionArn'])
@@ -57,7 +63,7 @@ def create_lambda_function(name: str,
 def deploy_state_machine(def_path: str, 
                          role_arn: str, 
                          lambdas: dict[str, str], 
-                         state_machine_name: str = "MyStateMachine") -> dict[str, Any]:
+                         state_machine_name: str = str(STATE_MACHINE_NAME)) -> dict[str, Any]:
     with open(def_path) as f:
         definition = json.load(f)
 
@@ -114,20 +120,21 @@ def add_lambda_permission(function_name: str, bucket_name: str) -> None:
 
 def add_s3_trigger_to_bucket(bucket_name: str, lambda_arn: str) -> None:
     """Configure S3 bucket to trigger Lambda on file upload."""
-    # Extract function name from ARN
     function_name = lambda_arn.split(':')[-1]
     
-    # Add permission first
     add_lambda_permission(function_name, bucket_name)
     
-    # Then configure the notification
+    # Wait for a few seconds to ensure the permission is propagated
+    logger.info("Waiting for permission propagation...")
+    time.sleep(5)
+    
     try:
         s3_client.put_bucket_notification_configuration(
             Bucket=bucket_name,
             NotificationConfiguration={
                 'LambdaFunctionConfigurations': [
                     {
-                        'LambdaFunctionArn': lambda_arn,  # Use the original ARN without :$LATEST
+                        'LambdaFunctionArn': lambda_arn,
                         'Events': ['s3:ObjectCreated:*']
                     }
                 ]
@@ -136,7 +143,6 @@ def add_s3_trigger_to_bucket(bucket_name: str, lambda_arn: str) -> None:
         logger.info(f"Added S3 trigger configuration to bucket {bucket_name}")
     except Exception as e:
         logger.error(f"Error configuring S3 trigger: {str(e)}")
-        logger.info(f"Attempted to configure with ARN: {lambda_arn}")
         raise
 
 
@@ -149,29 +155,26 @@ if __name__ == "__main__":
     # Create or update all Lambda functions
     lambdas = {
         "TaskOne": create_lambda_function(
-            LAMBDA_FUNCTION_ONE,  # type: ignore
+            LAMBDA_FUNCTION_ONE,
             f"{LAMBDA_FOLDER}/task_one.zip",
             lambda_role,
             "app_task_one.lambda_handler",
         ),
         "TaskTwo": create_lambda_function(
-            LAMBDA_FUNCTION_TWO,  # type: ignore
+            LAMBDA_FUNCTION_TWO,
             f"{LAMBDA_FOLDER}/task_two.zip",
             lambda_role,
             "app_task_two.lambda_handler"
         ),
         "S3Trigger": create_lambda_function(
-            LAMBDA_FUNCTION_S3_TRIGGER,  # type: ignore
+            LAMBDA_FUNCTION_S3_TRIGGER,
             f"{LAMBDA_FOLDER}/s3_trigger.zip",
             lambda_role,
             "app_s3_trigger.lambda_handler"
         )
     }
 
-    # Deploy state machine
     deploy_state_machine("state_machine_definition.json", sf_role, lambdas)
-    
-    # Add S3 bucket trigger using the S3Trigger Lambda from the lambdas dict
     add_s3_trigger_to_bucket(S3_BUCKET_NAME, lambdas["S3Trigger"])
     
     logger.info("Deployment complete!")

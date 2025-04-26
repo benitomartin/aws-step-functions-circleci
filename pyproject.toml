@@ -21,6 +21,19 @@ ci = [
     "ruff>=0.11.7",
 ]
 
+######################################
+# --- Build System Configuration --- #
+######################################
+
+# Build system
+
+[build-system]
+build-backend = "hatchling.build"
+
+requires = [ "hatchling" ]
+
+[tool.hatch.build.targets.wheel]
+packages = [ "aws_lambdas" ]
 
 ######################################
 # --- Linting & Formatting Tools --- #

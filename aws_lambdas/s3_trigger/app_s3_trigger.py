@@ -1,8 +1,14 @@
 import json
+import os
 from typing import Any
- 
+
 import boto3  # type: ignore
+import dotenv
 from loguru import logger
+
+dotenv.load_dotenv()
+
+STATE_MACHINE_NAME=os.getenv("STATE_MACHINE_NAME")
 
 sf_client = boto3.client('stepfunctions')
 
@@ -21,7 +27,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         
         # Start Step Functions execution
         response = sf_client.start_execution(
-            stateMachineArn='arn:aws:states:eu-central-1:730335307143:stateMachine:MyStateMachine',
+            stateMachineArn=f'arn:aws:states:eu-central-1:730335307143:stateMachine:{STATE_MACHINE_NAME}',
             input=json.dumps(input_data)
         )
         

@@ -1,5 +1,4 @@
 # Ensure that bash is used for running shell commands
-# SHELL := /bin/bash
 
 # Check if .env exists
 ifeq (,$(wildcard .env))
