@@ -1,5 +1,3 @@
-# Ensure that bash is used for running shell commands
-
 # Check if .env exists
 ifeq (,$(wildcard .env))
 $(error .env file is missing at .env. Please create one based on .env.example)

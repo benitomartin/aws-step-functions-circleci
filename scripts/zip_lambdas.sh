@@ -24,11 +24,11 @@ zip_lambda_with_deps() {
     REQUIREMENTS_FILE="${ROOT_DIR}/requirements.txt"
 
     echo "📦 Processing ${LAMBDA_NAME}..."
-    
+
     # Create package directory if it doesn't exist
     PACKAGE_DIR="${ROOT_DIR}/aws_lambdas/${LAMBDA_NAME}/package"
     mkdir -p "${PACKAGE_DIR}"
-    
+
     # Install dependencies
     cd "${ROOT_DIR}/aws_lambdas/${LAMBDA_NAME}"
     pip install --target ./package -r "${REQUIREMENTS_FILE}" --upgrade --no-cache-dir

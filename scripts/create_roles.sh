@@ -76,5 +76,3 @@ else
 fi
 
 echo "🎯 All roles are ready!"
-
-

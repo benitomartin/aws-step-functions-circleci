@@ -8,7 +8,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """Handle Lambda function invocation."""
     logger.info(f"Received event: {event}")
 
-    # Received event: {'document_id': '1706.03762v7', 
+    # Received event: {'document_id': '1706.03762v7',
     #                   's3_path': 's3://step-functions-16c78fbd7d18453b8745a2047e875e14/1706.03762v7.pdf'}
 
     try:
