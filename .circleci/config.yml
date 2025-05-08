@@ -30,11 +30,6 @@ jobs:
           command: |
             uv run mypy
 
-      - run:
-          name: Run tests
-          command: |
-            uv run pytest
-
       - aws-cli/setup:
           profile_name: default
 
@@ -52,6 +47,11 @@ jobs:
           name: Deploy
           command: |
             uv run deploy.py
+
+      - run:
+          name: Run tests
+          command: |
+            uv run pytest
 
 workflows:
   deploy:
