@@ -21,8 +21,8 @@ S3_BUCKET_NAME = os.environ["S3_BUCKET_NAME"]
 STATE_MACHINE_NAME = os.environ["STATE_MACHINE_NAME"]
 
 s3_client = boto3.client("s3", region_name=AWS_REGION)
-lambda_client = boto3.client("lambda")
-sf_client = boto3.client("stepfunctions")
+lambda_client = boto3.client("lambda", region_name=AWS_REGION)
+sf_client = boto3.client("stepfunctions", region_name=AWS_REGION)
 
 
 def create_lambda_function(name: str, zip_path: str, role_arn: str, handler: str) -> str:
