@@ -42,7 +42,6 @@ This project demonstrates how to deploy and manage Python-based AWS Step Functio
 - Python 3.12
 - AWS CLI configured with appropriate credentials
 - UV package manager
-- Make
 
 ## Setup
 
