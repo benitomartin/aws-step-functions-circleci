@@ -9,6 +9,7 @@ from loguru import logger
 
 dotenv.load_dotenv()
 
+AWS_REGION = os.environ["AWS_REGION"]
 AWS_ACCOUNT_ID = os.environ["AWS_ACCOUNT_ID"]
 SF_ROLE_NAME = os.environ["SF_ROLE_NAME"]
 LAMBDA_ROLE_NAME = os.environ["LAMBDA_ROLE_NAME"]
@@ -19,7 +20,7 @@ LAMBDA_FUNCTION_S3_TRIGGER = os.environ["LAMBDA_FUNCTION_S3_TRIGGER"]
 S3_BUCKET_NAME = os.environ["S3_BUCKET_NAME"]
 STATE_MACHINE_NAME = os.environ["STATE_MACHINE_NAME"]
 
-s3_client = boto3.client("s3")
+s3_client = boto3.client("s3", region_name=AWS_REGION)
 lambda_client = boto3.client("lambda")
 sf_client = boto3.client("stepfunctions")
 
