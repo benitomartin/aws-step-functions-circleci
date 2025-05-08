@@ -12,7 +12,7 @@ STATE_MACHINE_NAME = os.getenv("STATE_MACHINE_NAME")
 AWS_REGION = os.getenv("AWS_REGION")
 AWS_ACCOUNT_ID = os.getenv("AWS_ACCOUNT_ID")
 
-sf_client = boto3.client("stepfunctions")
+sf_client = boto3.client("stepfunctions", region_name=AWS_REGION)
 
 
 def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
