@@ -5,7 +5,6 @@ This project demonstrates how to deploy and manage Python-based AWS Step Functio
 ## Project Structure
 
 ```text
-.
 ├── aws_lambdas/                      # Lambda function implementations
 │   ├── __init__.py                   # Package initialization
 │   ├── s3_trigger/                   # S3 event trigger Lambda
